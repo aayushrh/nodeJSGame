@@ -82,6 +82,24 @@ class GameServer {
         this.players.push(new StoredPlayer(socketID, name, color));
     }
 
+    playerWin() {
+        let index = -1;
+        if (this.numPlayersAlive() == 1) {
+            var socketID = 0;
+            for (const id in this.alivePlayers) {
+                socketID = id;
+            }
+            for (let i = 0; i < this.players.length; i++) {
+                if (this.players[i].socketID == socketID) {
+                    index = i;
+                }
+            }
+            if (index != -1) {
+                this.players[index].points += 1;
+            }
+        }
+    }
+
     respawn(){
         for(const id in this.alivePlayers){
             Composite.remove(this.engine.world, this.alivePlayers[id].body);
@@ -140,6 +158,7 @@ class StoredPlayer {
         this.socketID = socketID;
         this.name = name;
         this.color = color;
+        this.points = 0;
     }
 }
 
@@ -290,6 +309,17 @@ function compileMap(map){
     return(nmap);
 }
 
+function compilePlayerScores(players) {
+    var nplayers = [];
+    for (let i = 0; i < players.length; i++) {
+        nplayers.push({
+            name: players[i].name,
+            score: players[i].points
+        });
+    }
+    return (nplayers);
+}
+
 function addMap(map, engine, mapBodies){
     for(let i = 0; i < mapBodies.length; i++){
         Composite.remove(engine.world, mapBodies[i]);
@@ -387,6 +417,7 @@ io.on('connection', (socket) => {
         socket.join(serverPutIn.id);
         io.sockets.in(serverPutIn.id).emit('updatePlayers', compilePlayers(serverPutIn.alivePlayers));
         io.sockets.in(serverPutIn.id).emit('updateMap', compileMap(serverPutIn.map))
+        io.sockets.in(serverPutIn.id).emit('updatePoints', compilePlayerScores(serverPutIn.players))
         connectPlayer(socket, serverPutIn);
     })
 })
@@ -395,18 +426,22 @@ server.listen(3000, () => console.log("Server now availible on http://localhost:
 
 setInterval(() => {
     for (let i = 0; i < gameServers.length; i++) {
-        for(const id in gameServers[i].alivePlayers){
+        for (const id in gameServers[i].alivePlayers) {
             const player = gameServers[i].alivePlayers[id];
-            Body.applyForce(player.body, player.body.position, Vector.create(player.ax/200.0, player.ay/200.0));
+            Body.applyForce(player.body, player.body.position, Vector.create(player.ax / 200.0, player.ay / 200.0));
             player.onGround = false;
-            for(let j = 0; j < gameServers[i].mapBodies.length; j++){
+            for (let j = 0; j < gameServers[i].mapBodies.length; j++) {
                 const coll = Collision.collides(player.body, gameServers[i].mapBodies[j]);
-                if(coll != null){
-                    if(coll.normal.y > 0.1){
+                if (coll != null) {
+                    if (coll.normal.y > 0.1) {
                         player.onGround = true;
                     }
-                    if(gameServers[i].map.shapes[j].bounce > 0){
-                        Body.applyForce(player.body, player.body.position, Vector.mult(coll.normal, -gameServers[i].map.shapes[j].bounce * 0.1));
+                    if (gameServers[i].map.shapes[j].bounce > 0) {
+                        const mag = Vector.magnitude(Body.getVelocity(player.body))
+                        Body.setSpeed(player.body, 0);
+                        console.log(mag);
+                        //Body.applyForce(player.body, player.body.position, Vector.create(1, -1))
+                        Body.applyForce(player.body, player.body.position, Vector.mult(coll.normal, -gameServers[i].map.shapes[j].bounce * 0.05 * mag));
                     }
                 }
             }
@@ -421,8 +456,10 @@ setInterval(() => {
                 gameServers[i].mapRotation = (gameServers[i].mapRotation + 1) % maps.length;
                 gameServers[i].mapBodies = addMap(maps[gameServers[i].mapRotation], gameServers[i].engine, gameServers[i].mapBodies)
                 gameServers[i].map = maps[gameServers[i].mapRotation]
+                gameServers[i].playerWin();
                 gameServers[i].respawn();
                 io.sockets.in(gameServers[i].id).emit('updateMap', compileMap(gameServers[i].map))
+                io.sockets.in(gameServers[i].id).emit('updatePoints', compilePlayerScores(gameServers[i].players))
             }
         }else{
             if(gameServers[i].numPlayersAlive() <= 0){
@@ -430,6 +467,7 @@ setInterval(() => {
                 gameServers[i].mapBodies = addMap(maps[gameServers[i].mapRotation], gameServers[i].engine, gameServers[i].mapBodies)
                 gameServers[i].map = maps[gameServers[i].mapRotation]
                 gameServers[i].respawn();
+                io.sockets.in(gameServers[i].id).emit('updatePoints', compilePlayerScores(gameServers[i].players))
                 io.sockets.in(gameServers[i].id).emit('updateMap', compileMap(gameServers[i].map))
             }
         }

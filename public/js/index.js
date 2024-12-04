@@ -15,6 +15,7 @@ var nameTyping = "";
 
 frontendPlayers = [];
 currentMap = [];
+scores = [];
 
 class Player {
     constructor(x, y, color, rad, heavy, name) {
@@ -76,8 +77,8 @@ class Button {
         ctx.stroke();
         ctx.fill();
         ctx.font = "bold italic " + Math.round(50*multi) + "px Arial";
-        ctx.fillStyle = this.textColor
-        ctx.fillText(this.text, (this.x+10) * multi, (this.y+45) * multi);
+        ctx.fillStyle = this.textColor;
+        ctx.fillText(this.text, (this.x + this.width / 2) * multi - ctx.measureText(this.text).width / 2, (this.y + this.height/2) * multi + Math.round(30 * multi)/2);
     }
 }
 
@@ -98,9 +99,13 @@ function connect(socket) {
         currentMap = map;
     })
 
+    socket.on('updatePoints', (points) => {
+        scores = points;
+    })
+
     window.addEventListener("keydown", (event) => {
         var keyCode = event.key;
-        inputs[keyCode] = false
+        inputs[keyCode] = true
         switch (keyCode) {
             case 'd': //d
                 if(!event.repeat){
@@ -229,10 +234,10 @@ setInterval(() => {
 }, 15);
 
 var buttons = [
-    new Button(1000, 500, 500, 65, 'white', 'black', nameTyping, 'black', () => {
+    new Button(664, 490, 400, 65, 'white', 'black', nameTyping, 'black', () => {
         typing = true;
     }),
-    new Button(20, 20, 400, 50, 'blue', 'cyan', "Quick Play", 'cyan', () => {
+    new Button(664, 615, 400, 50, 'blue', 'cyan', "Quick Play", 'cyan', () => {
         gameStart = true;
         socket = io();
         if(nameTyping == ""){
@@ -243,7 +248,7 @@ var buttons = [
         }
         connect(socket);
     }),
-    new Button(900, 200, 100, 100, 'white', 'black', "<", 'black', () => {
+    new Button(539, 195, 100, 100, 'white', 'black', "<", 'black', () => {
         let ind = (colors.indexOf(currentColor)-1);
         let nind = 0;
         if(ind < 0){
@@ -253,7 +258,7 @@ var buttons = [
         }
         currentColor = colors[nind]
     }),
-    new Button(1500, 200, 100, 100, 'white', 'black', ">", 'black', () => {
+    new Button(1089, 195, 100, 100, 'white', 'black', ">", 'black', () => {
         currentColor = colors[(colors.indexOf(currentColor)+1) % colors.length]
     }),
 ]
@@ -277,7 +282,7 @@ function display(canvas, ctx) {
     }
     ctx.beginPath()
     ctx.fillStyle = currentColor;
-    ctx.arc(1250 * multi, 250*multi, 200*multi, 0, 2*Math.PI);
+    ctx.arc(864 * multi, 245*multi, 150*multi, 0, 2*Math.PI);
     ctx.fill()
     buttons[0].text = nameTyping;
     /*ctx.font = "bold italic " + Math.round(50*multi) + "px Arial";
@@ -299,5 +304,17 @@ function update(canvas, ctx) {
     for (const id in frontendPlayers) {
         const p = frontendPlayers[id];
         p.draw(ctx)
+    }
+    
+    if (inputs['Escape']) {
+        console.log(scores)
+        ctx.fillStyle = "light grey";
+        ctx.fillRect(1028 * multi, 0, 800 * multi, 70 * (scores.length) * multi);
+        for (let i = 0; i < scores.length; i++) {
+            ctx.fillStyle = "white";
+            ctx.font = "bold italic " + Math.round(50 * multi) + "px Arial";
+            ctx.fillText(scores[i].name, 1078 * multi, (50 + 65*i) * multi);
+            ctx.fillText(scores[i].score, 1688 * multi, (50 + 65*i) * multi);
+        }
     }
 }
