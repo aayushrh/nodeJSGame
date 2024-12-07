@@ -165,7 +165,7 @@ class StoredPlayer {
 class Player {
     constructor(socketID, x, y, rad, name, color) {
         this.socketID = socketID;
-        this.body = Bodies.circle(x, y, rad, {label: "Player", friction: 0.1, frictionAir: 0, mass:2, restitution: 0});
+        this.body = Bodies.circle(x, y, rad, {label: "Player", friction: 0, frictionAir: 0, mass:2, restitution: 0});
         this.ax = 0;
         this.ay = 0;
         this.rad = rad;
@@ -328,12 +328,12 @@ function addMap(map, engine, mapBodies){
     for(let i = 0; i < map.shapes.length; i++){
         const shape = map.shapes[i]
         if(shape.type == "r"){
-            var body = Bodies.rectangle(shape.x + shape.width/2, shape.y + shape.height/2, shape.width, shape.height, {isStatic: true, label:"Ground", friction: 0.1})
+            var body = Bodies.rectangle(shape.x + shape.width/2, shape.y + shape.height/2, shape.width, shape.height, {isStatic: true, label:"Ground", friction: 0})
             Body.rotate(body, shape.rot);
             Composite.add(engine.world, body);
             mapBodies.push(body);
         }else if (shape.type == "c"){
-            var body = Bodies.circle(shape.x, shape.y, shape.rad, {isStatic: true, label:"Ground", friction: 0.1})
+            var body = Bodies.circle(shape.x, shape.y, shape.rad, {isStatic: true, label:"Ground", friction: 0})
             Composite.add(engine.world, body);
             mapBodies.push(body);
         }
@@ -438,10 +438,13 @@ setInterval(() => {
                     }
                     if (gameServers[i].map.shapes[j].bounce > 0) {
                         const mag = Vector.magnitude(Body.getVelocity(player.body))
-                        Body.setSpeed(player.body, 0);
+                        //Body.setSpeed(player.body, 0);
                         console.log(mag);
                         //Body.applyForce(player.body, player.body.position, Vector.create(1, -1))
-                        Body.applyForce(player.body, player.body.position, Vector.mult(coll.normal, -gameServers[i].map.shapes[j].bounce * 0.05 * mag));
+                        //Body.applyForce(player.body, player.body.position, Vector.mult(coll.normal, -gameServers[i].map.shapes[j].bounce * 0.05 * mag));
+                        Body.setVelocity(player.body, Vector.mult(coll.normal, -gameServers[i].map.shapes[j].bounce * 2 * Math.max(mag, 1)));
+                        Body.setVelocity(player.body, Vector.mult(coll.normal, -gameServers[i].map.shapes[j].bounce * 2 * Math.max(mag, 1)));
+                        Body.setVelocity(player.body, Vector.mult(coll.normal, -gameServers[i].map.shapes[j].bounce * 2 * Math.max(mag, 1)));
                     }
                 }
             }
