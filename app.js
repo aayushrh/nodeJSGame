@@ -343,7 +343,6 @@ function addMap(map, engine, mapBodies){
 
 function connectPlayer(socket, serverPutIn){
     socket.on('disconnect', (reason) => {
-        console.log("user disconnected")
         serverPutIn.disconnect(socket.id);
         io.sockets.in(serverPutIn.id).emit('updatePlayer', compilePlayers(serverPutIn.alivePlayers))
     })
@@ -395,7 +394,6 @@ function connectPlayer(socket, serverPutIn){
 }
 
 io.on('connection', (socket) => {
-    console.log("A new user has connected");
 
     socket.on('connectPlayer', (name, color) => {
         var putIn = false;
@@ -439,7 +437,6 @@ setInterval(() => {
                     if (gameServers[i].map.shapes[j].bounce > 0) {
                         const mag = Vector.magnitude(Body.getVelocity(player.body))
                         //Body.setSpeed(player.body, 0);
-                        console.log(mag);
                         //Body.applyForce(player.body, player.body.position, Vector.create(1, -1))
                         //Body.applyForce(player.body, player.body.position, Vector.mult(coll.normal, -gameServers[i].map.shapes[j].bounce * 0.05 * mag));
                         Body.setVelocity(player.body, Vector.mult(coll.normal, -gameServers[i].map.shapes[j].bounce * 2 * Math.max(mag, 1)));
